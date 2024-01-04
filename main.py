@@ -4,27 +4,22 @@ from data import get_seizure_data
 
 DATA_ROOT = "dataset/chb-mit-scalp-eeg-database-1.0.0/"
 
-chb12_data = get_seizure_data("chb01")
-total = 0
-for data in chb12_data:
-    total += data.seizure_count
-    # print(data.filename)
+from data import get_seizure_data, get_time_window
 
-# print("filadmwakdm", chb12_data[0].filename)
-# print(len(chb12_data))
-print("total seizures in chb12", total)
+edf_data = get_seizure_data("chb01")
 
-# from data import get_seizure_data, get_time_window
+for i, file in enumerate(edf_data):
+    for seizure_number, start_end in file.start_end.items():
+        seizure_start = start_end[0]
+        seizure_end = start_end[1]
 
-# chb12 = get_seizure_data("chb12")
-# first_seizure_start = chb12[0].start_end[1][0]
-# first_seizure_end = chb12[0].start_end[1][1]
+        save_dir = "dataset/parsed/seizure/"
+        filename = file.filename.split('/')[-1].split('.')
+        export_filename = save_dir + filename[0] + '_' + str(seizure_number) + '.' + filename[1]
 
-# print(chb12[0].filename, first_seizure_start, first_seizure_end)
-# save_dir = "dataset/parsed/seizure/"
+        seizure_edf = get_time_window(file.filename, seizure_start, seizure_end)
 
-# first_seizure_edf = get_time_window(chb12[0].filename, first_seizure_start, first_seizure_end)
-# first_seizure_edf.export(save_dir + chb12[0].filename.split('/')[-1])
+        seizure_edf.export(export_filename, verbose=False, overwrite=True)
 
 # quit()
 # raw_edf = mne.io.read_raw_edf(DATA_ROOT + "chb12/chb12_27.edf")

@@ -4,6 +4,7 @@ from typing import Tuple, List
 from re import findall
 import mne
 from mne.io.edf.edf import RawEDF
+import numpy as np
 
 class SeizureData:
     filename = ""
@@ -55,7 +56,6 @@ def get_seizure_data(case: str) -> List[SeizureData]:
                 ends[numbers_in_string[0]] = numbers_in_string[1]
 
         if file_name is not None and len(lines[i].split()) == 0 or i == i-1:
-            print(file_name)
             start_end = {}
             for seizure_number in starts.keys():
                 start_end[seizure_number] = (starts[seizure_number], ends[seizure_number])
@@ -70,3 +70,34 @@ def get_time_window(file: str, start_sec: int, end_sec: int) -> RawEDF:
     raw_file.crop(start_sec, end_sec)
 
     return raw_file
+
+
+def generate_train_data(sequence_length: int, stride: int, cases: List[str]):
+    for case in cases:
+        case_seizure_data = get_seizure_data(case)
+        for seizure_data in case_seizure_data:
+            data_sequence = []
+            labels = []
+
+            raw = mne.io.read_raw_edf(seizure_data.filename, verbose=False)
+            raw = raw.drop_channels("ECG", on_missing="ignore")
+            data, timestamp = raw.get_data(return_times=True)
+
+            seizure_count = 1
+            for i in range(0, timestamp.shape[0] - sequence_length, stride):
+                data_sequence.append(data[:, i:i+sequence_length])
+                label = 0
+                if len(seizure_data.start_end) + 1 > seizure_count:
+                    if seizure_data.start_end[seizure_count][0] < timestamp[i] < seizure_data.start_end[seizure_count][1]:
+                        label = 1
+                    if timestamp[i] > seizure_data.start_end[seizure_count][1]:
+                        seizure_count += 1
+                labels.append(label)
+
+            filename = seizure_data.filename.split("/")[-1]
+            # print(data_sequence)
+            np.save("ml_processed/" + filename + "_data.npy", data_sequence)
+            labels_reshaped = np.reshape(labels, (-1, 1)) # reshape necessary for keras model
+            # print(labels_reshaped.shape)
+            # print(labels[1])
+            np.save("ml_processed/" + filename + "_labels.npy", labels_reshaped)
