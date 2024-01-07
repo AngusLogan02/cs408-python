@@ -101,3 +101,42 @@ def generate_train_data(sequence_length: int, stride: int, cases: List[str]):
             # print(labels_reshaped.shape)
             # print(labels[1])
             np.save("ml_processed/" + filename + "_labels.npy", labels_reshaped)
+
+
+def generate_balanced_train_data(sequence_length: int, stride: int, cases: List[str]):
+    """Currently only works with 1s sequence length and 256Hz stride (set both to 256)."""
+    for case in cases:
+        case_seizure_data = get_seizure_data(case)
+        for seizure_data in case_seizure_data:
+            if len(seizure_data.start_end) == 0:
+                continue
+            raw = mne.io.read_raw_edf(seizure_data.filename, verbose=False)
+            ignore = ["ECG", "VNS", ".", "-", "-", "--0", "--1", "--2", "--3", "--4", "FC1-Ref", "FC2-Ref", "FC5-Ref", "FC6-Ref", "CP1-Ref", "CP2-Ref", "CP5-Ref", "CP6-Ref", "EKG1-CHIN"]
+            raw = raw.drop_channels(ignore, on_missing="ignore")
+            if len(raw.get_channel_types()) != 23:
+                continue
+            data, timestamp = raw.get_data(return_times=True)
+
+            seconds_in_file = 0 # used to determine if more negative data can be added
+            for seizure in seizure_data.start_end.values():
+                seconds_in_file += seizure[1] - seizure[0]
+            data_sequence = []
+            labels = []
+            curr_seizure = 1
+            for i in range(0, timestamp.shape[0] - sequence_length, stride):
+                if not seizure_data.start_end[curr_seizure][0] < timestamp[i] < seizure_data.start_end[curr_seizure][1] \
+                    and seconds_in_file > 0:
+                    data_sequence.append(data[:, i:i+sequence_length])
+                    labels.append(0)
+                    seconds_in_file -= 1
+                elif seizure_data.start_end[curr_seizure][0] <= timestamp[i] < seizure_data.start_end[curr_seizure][1]:
+                    data_sequence.append(data[:, i:i+sequence_length])
+                    labels.append(1)
+                
+                if timestamp[i] > seizure_data.start_end[curr_seizure][1] and curr_seizure < len(seizure_data.start_end):
+                    curr_seizure += 1
+            
+            filename = seizure_data.filename.split("/")[-1]
+            np.save("ml_processed_balanced/" + filename + "_data.npy", data_sequence)
+            labels_reshaped = np.reshape(labels, (-1, 1)) # reshape necessary for keras model
+            np.save("ml_processed_balanced/" + filename + "_labels.npy", labels_reshaped)

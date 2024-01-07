@@ -2,21 +2,19 @@ import tensorflow as tf
 from data import get_seizure_data
 import numpy as np
 import math
+from preprocessor import PreProcessor
+import os
 
 class SeizureSequence(tf.keras.utils.Sequence):
-    def __init__(self, batch_size, dataset, cases, bias_positive, shuffle=True):
+    def __init__(self, batch_size, dataset, cases, bias_positive, shuffle=True, preprocessor=PreProcessor):
         self.batch_size = batch_size
         self.dataset = dataset
         self.shuffle = shuffle
         self.cases = cases
         self.bias_positive = bias_positive
+        self.preprocessor = preprocessor
 
-        files = []
-        for case in self.cases:
-            case_data = get_seizure_data(case)
-            for seizure_data in case_data:
-                files.append(seizure_data.filename.split("/")[-1])
-
+        files = ['_'.join(x.split('_')[:-1]) for x in os.listdir(dataset) if "chb03" not in x]
         self.files = files
         self.file_count = len(files)
 
@@ -27,46 +25,23 @@ class SeizureSequence(tf.keras.utils.Sequence):
         low = idx * self.batch_size
         high = min(low + self.batch_size, self.file_count)
 
-        if self.bias_positive:
-            data = np.empty((0, 23, 256))
-            labels = np.empty((0, 1))
-            for i in range(low, high):
-                orig_data = np.load(self.dataset + "/" + self.files[i] + "_data.npy")
-                orig_labels = np.load(self.dataset + "/" + self.files[i] + "_labels.npy")
+        first_run = True
+        for i in range(low, high):
+            data = np.load(self.dataset + "/" + self.files[i] + "_data.npy")
+            labels = np.load(self.dataset + "/" + self.files[i] + "_labels.npy")
 
-                positive_count = np.count_nonzero(orig_labels)
-                if positive_count == 0:
-                     continue
-                positive_indices = []
-                for j in range(0, len(orig_labels)):
-                    if orig_labels[j][0] == 1:
-                        positive_indices.append(j)
+            if first_run:
+                batch_data = data
+                batch_labels = labels
+                first_run = False
+            else:
+                # print(self.files[i], data.shape)
+                batch_data = np.append(batch_data, data, axis=0)
+                batch_labels = np.append(batch_labels, labels, axis=0)
 
-                negative_indices = []
-                for j in range(0, len(orig_labels)):
-                    if orig_labels[j][0] == 0:
-                        negative_indices.append(j)
-                    if len(negative_indices) == positive_count:
-                        break
-                    
-                positive_data = orig_data[positive_indices[0]:positive_indices[-1]]
-                positive_labels = orig_labels[positive_indices[0]:positive_indices[-1]]
-                negative_data = orig_data[negative_indices[0]:negative_indices[-1]]
-                negative_labels = orig_labels[negative_indices[0]:negative_indices[-1]]
-                
-                file_data = np.concatenate((positive_data, negative_data), axis=0)
-                file_labels = np.concatenate((positive_labels, negative_labels), axis=0)
-                data = np.concatenate((data, file_data), axis=0)
-                labels = np.concatenate((labels, file_labels), axis=0)
+        return batch_data, batch_labels
 
-            return data, labels
-        
-        else:
-            for i in range(low, high):
-                data = np.load(self.dataset + "/" + self.files[i] + "_data.npy")
-                labels = np.load(self.dataset + "/" + self.files[i] + "_labels.npy")
-            
-                return np.array(data), np.array(labels)
+
             
 
 
