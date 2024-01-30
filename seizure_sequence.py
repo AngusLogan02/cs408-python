@@ -6,7 +6,7 @@ from preprocessor import PreProcessor
 import os
 
 class SeizureSequence(tf.keras.utils.Sequence):
-    def __init__(self, batch_size, dataset, cases, bias_positive, shuffle=True, preprocessor=PreProcessor):
+    def __init__(self, batch_size, dataset, cases, bias_positive, shuffle=True, preprocessor: PreProcessor = None):
         self.batch_size = batch_size
         self.dataset = dataset
         self.shuffle = shuffle
@@ -30,6 +30,11 @@ class SeizureSequence(tf.keras.utils.Sequence):
             data = np.load(self.dataset + "/" + self.files[i] + "_data.npy")
             labels = np.load(self.dataset + "/" + self.files[i] + "_labels.npy")
 
+            if self.preprocessor is not None:
+                # print("data before transform", data.shape)
+                approx, detail = self.preprocessor.transform(data)
+                data = approx
+                data = self.preprocessor.extract_features(data)
             if first_run:
                 batch_data = data
                 batch_labels = labels
