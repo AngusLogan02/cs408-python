@@ -17,7 +17,6 @@ class PreProcessor:
     
     def extract_features(self, data):
         # print("data coming in", data.shape)
-        # entropy = entr(data).sum(axis=2)
         minimum = np.min(data, axis=2)
         maximum = np.max(data, axis=2)
         mean = np.mean(data, axis=2)
@@ -25,12 +24,14 @@ class PreProcessor:
         sd = np.std(data, axis=2)
         variance = np.var(data, axis=2)
         skewness = skew(data, axis=2)
+        # entropy = entr(data)
         # print("finished features")
         # print(entropy)
 
         features = np.array([minimum, maximum, mean, median, sd, variance, skewness])
         # print("feature shape then max of first:", features.shape, features[2][0][0])
-        reshaped_features = features.reshape(data.shape[0], 23, 7)
+        # print(features.shape)
+        reshaped_features = features.reshape(data.shape[0], data.shape[1], features.shape[0])
         # print("finished features reshape", reshaped_features.shape, reshaped_features[0][0][2])
         result_data = np.concatenate((data[:, :, :-data.shape[2]], reshaped_features), axis=2)
         # print("result_shape", result_data.shape)
