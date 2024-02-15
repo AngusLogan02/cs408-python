@@ -183,6 +183,7 @@ def generate_balanced_pre_ictal_train_data(sequence_length: int, stride: int, ca
 def generate_pre_ictal_train_data(sequence_length: int, stride: int, cases: List[str], seconds_before: int):
     """Currently only works with 1s sequence length and 256Hz stride (set both to 256)."""
     for case in cases:
+        print("ahahahha")
         case_seizure_data = get_seizure_data(case)
         for seizure_data in case_seizure_data:
             if len(seizure_data.start_end) == 0:
@@ -191,6 +192,7 @@ def generate_pre_ictal_train_data(sequence_length: int, stride: int, cases: List
             ignore = ["ECG", "VNS", ".", "-", "-", "--0", "--1", "--2", "--3", "--4", "FC1-Ref", "FC2-Ref", "FC5-Ref", "FC6-Ref", "CP1-Ref", "CP2-Ref", "CP5-Ref", "CP6-Ref", "EKG1-CHIN"]
             raw = raw.drop_channels(ignore, on_missing="ignore")
             if len(raw.get_channel_types()) != 23:
+                print(seizure_data)
                 continue
             data, timestamp = raw.get_data(return_times=True)
 

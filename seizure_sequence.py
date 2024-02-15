@@ -18,13 +18,18 @@ class SeizureSequence(tf.keras.utils.Sequence):
         files = ['_'.join(filename.split('_')[:-1]) for filename in files]
 
         self.files = files
-        self.file_count = len(files)
+        self.test_file = files[0]
+        self.files = self.files[1:]
+        self.file_count = len(self.files)
 
     def __len__(self):
         return math.ceil(self.file_count / self.batch_size)
     
     def get_files(self):
         return self.files
+    
+    def get_test_file(self):
+        return self.test_file
 
     def __getitem__(self, idx):
         low = idx * self.batch_size
