@@ -3,6 +3,7 @@ import numpy as np
 from seizure_sequence import SeizureSequence
 from model import create_model, create_large_model, compile_model
 
+# TODO remove unused imports, commented lines, types to variables
 cases = [x for x in os.listdir("dataset/chb-mit-scalp-eeg-database-1.0.0/") if "chb" in x]
 cases = cases[16:]
 print(cases)
