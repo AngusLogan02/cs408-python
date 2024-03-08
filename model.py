@@ -1,5 +1,5 @@
 from keras.models import Sequential, Model
-from keras.layers import Input, Conv1D, MaxPool1D, LSTM, Dense, Dropout
+from keras.layers import Input, Conv1D, Conv2D, MaxPool1D, LSTM, Dense, Dropout
 from keras.optimizers import Adam, SGD
 import matplotlib.pyplot as plt
 
@@ -22,7 +22,7 @@ class ModelTools:
         """
         model = Sequential()
 
-        model.add(Input(23, 256))
+        model.add(Input(shape=(23, 256)))
         model.add(Conv1D(512, kernel_size=3, activation="relu"))
         model.add(MaxPool1D())
         if dropout:
