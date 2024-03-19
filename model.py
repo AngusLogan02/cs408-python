@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # TODO MAKE ALL QUOTES CONSISTENT
 
 class ModelTools:
-    def create_model(self, dropout=False) -> Model:
+    def create_model(self, dropout=False, dropout_rate=0.25) -> Model:
         """Create the CNN used for Ictal and Pre-Ictal detection.
 
         Parameters
@@ -23,23 +23,21 @@ class ModelTools:
         model = Sequential()
 
         model.add(Input(shape=(23, 256)))
-        model.add(Conv1D(512, kernel_size=3, activation="relu"))
+        model.add(Conv1D(512, kernel_size=5, activation="relu"))
         model.add(MaxPool1D())
         if dropout:
-            model.add(Dropout(0.25))
+            model.add(Dropout(dropout_rate))
         model.add(Conv1D(256, kernel_size=3, activation="relu"))
         model.add(MaxPool1D())
         if dropout:
-            model.add(Dropout(0.25))
+            model.add(Dropout(dropout_rate))
 
-        model.add(Conv1D(128, kernel_size=3, activation="relu"))
+        model.add(Conv1D(128, kernel_size=1, activation="relu"))
         model.add(MaxPool1D())
         if dropout:
-            model.add(Dropout(0.25))
+            model.add(Dropout(dropout_rate))
 
-        model.add(Dense(256, activation="relu"))
-        if dropout:
-            model.add(Dropout(0.5))
+        model.add(Dense(64, activation="relu"))
         model.add(Dense(1, activation="sigmoid"))
 
         return model
@@ -64,7 +62,7 @@ class ModelTools:
         return model
 
 
-    def accuracy_loss_plot(self, history) -> None:
+    def accuracy_loss_plot(self, histories, filename=None) -> None:
         """A utility function to simplify graphing a model's performance.
 
         Notes
@@ -84,22 +82,32 @@ class ModelTools:
         training epoch.
 
         """
+        combined_history = {}
+        for history in histories:
+            for key in history.history.keys():
+                if combined_history.get(key) is not None:
+                    combined_history[key] = combined_history[key] + history.history[key]
+                else:
+                    combined_history[key] = history.history[key]
         # Plotting accuracy and loss over epochs
         plt.figure(figsize=(12, 4))
 
         # Plotting accuracy
         plt.subplot(1, 2, 1)
-        plt.plot(history.history["accuracy"])
+        plt.plot(combined_history["accuracy"])
         plt.title("Model Accuracy")
         plt.xlabel("Epochs")
         plt.ylabel("Accuracy")
 
         # Plotting loss
         plt.subplot(1, 2, 2)
-        plt.plot(history.history["loss"])
+        plt.plot(combined_history["loss"])
         plt.title("Model Loss")
         plt.xlabel("Epochs")
         plt.ylabel("Loss")
 
         plt.tight_layout()
-        plt.show()
+        if filename is not None:
+            plt.savefig(filename)
+        else:
+            plt.show()
