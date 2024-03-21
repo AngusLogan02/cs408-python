@@ -42,6 +42,39 @@ class ModelTools:
 
         return model
 
+    def create_recurrent_model(self, dropout=False, dropout_rate=0.25) -> Model:
+        """Create the CNN used for Ictal and Pre-Ictal detection.
+
+        Parameters
+        ----------
+        dropout : bool
+            Whether or not to enable the dropout layers
+
+        Returns
+        -------
+        Keras Model
+            A sequential model made up of CNN, (Dropout), and Dense layers.
+
+        """
+        model = Sequential()
+
+        model.add(Input(shape=(23, 256)))
+        model.add(LSTM(512, activation="tanh"))
+        if dropout:
+            model.add(Dropout(dropout_rate))
+        model.add(LSTM(256, activation="tanh"))
+        if dropout:
+            model.add(Dropout(dropout_rate))
+
+        model.add(LSTM(128, activation="tanh"))
+        if dropout:
+            model.add(Dropout(dropout_rate))
+
+        model.add(Dense(128, activation="sigmoid"))
+        model.add(Dense(1, activation="sigmoid"))
+
+        return model
+
 
     def compile_model(self, model) -> Model:
         """Compiles a specified model.

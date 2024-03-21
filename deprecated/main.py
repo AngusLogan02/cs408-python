@@ -1,10 +1,10 @@
 from time import sleep
 import mne
-from data import get_seizure_data
+from seizure_data import get_seizure_data
 
 DATA_ROOT = "dataset/chb-mit-scalp-eeg-database-1.0.0/"
 
-from data import get_seizure_data, get_time_window
+from seizure_data import get_seizure_data, get_time_window
 
 edf_data = get_seizure_data("chb01")
 

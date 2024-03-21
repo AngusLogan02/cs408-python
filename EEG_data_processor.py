@@ -6,11 +6,11 @@ import mne
 from mne.io.edf.edf import RawEDF
 import numpy as np
 from numpy.typing import ArrayLike
-from data import get_seizure_data
+from seizure_data import SeizureData, get_seizure_data
 
 from labellers import Labeller
 
-class EEG_Data_Processor:
+class EEGDataProcessor:
     def get_clean_data(self, filename: str) -> Tuple[ArrayLike, ArrayLike]:
         """Drops non-EEG channels from a file and returns timestamped data in numpy
         form.
@@ -116,3 +116,59 @@ class EEG_Data_Processor:
                 filename = seizure_data.filename.split("/")[-1]
                 self.save_labelled_data(output_dir, filename, data_sequence, labels)
                 labeller.reset()
+
+
+    def get_seizure_data(case: str) -> List[SeizureData]:
+        """Parses information about a case.
+        
+        Parameters
+        ----------
+        case : str
+            The name of the case e.g. "chb01"
+
+        Returns
+        -------
+        List[SeizureData]
+            A list containing a SeizureData object for each .edf file in the case.
+        
+        """
+        # TODO split this into diff functions
+        file = open(DATA_ROOT + case + "/" + case + "-summary.txt", mode="r")
+        lines = file.readlines()
+        file.close()
+
+        all_file_data = []
+        file_name = None
+        for i in range(0, len(lines)):
+            if lines[i].startswith("File Name"):
+                file_name = DATA_ROOT + case + "/" + [word for word in lines[i].split() if word.endswith(".edf")][0]
+                starts = {}
+                ends = {}
+                seizure_count = 0
+
+            if lines[i].startswith("Number of"):
+                seizure_count = int(lines[i][-2])
+            # TODO make this and next if one func
+            if lines[i].startswith("Seizure") and "Start" in lines[i]:
+                numbers_in_string = [int(n) for n in findall(r"\d+", lines[i])]
+                if len(numbers_in_string) == 1:
+                    starts[1] = numbers_in_string[0]
+                else:
+                    starts[numbers_in_string[0]] = numbers_in_string[1]
+
+            if lines[i].startswith("Seizure") and "End" in lines[i]:
+                numbers_in_string = [int(n) for n in findall(r"\d+", lines[i])]
+                if len(numbers_in_string) == 1:
+                    ends[1] = numbers_in_string[0]
+                else:
+                    ends[numbers_in_string[0]] = numbers_in_string[1]
+
+            if file_name is not None and len(lines[i].split()) == 0 or i == i-1:
+                start_end = {}
+                for seizure_number in starts.keys():
+                    start_end[seizure_number] = (starts[seizure_number], ends[seizure_number])
+                seizure_data = SeizureData(file_name, seizure_count, start_end)
+                all_file_data.append(seizure_data)
+                file_name = None
+        
+        return all_file_data

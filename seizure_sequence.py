@@ -1,6 +1,6 @@
 from typing import List, Tuple
 import tensorflow as tf
-from data import get_seizure_data
+from seizure_data import get_seizure_data
 import numpy as np
 from numpy.typing import NDArray
 import math
